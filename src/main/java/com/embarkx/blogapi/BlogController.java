@@ -29,6 +29,7 @@ public class BlogController {
 
 
     @PostMapping("/validate")
+
     public String validateContent(@RequestParam String content) {
         if (content.length() > 5000) {
             return "Too long";
