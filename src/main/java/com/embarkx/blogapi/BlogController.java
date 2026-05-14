@@ -3,6 +3,7 @@ package com.embarkx.blogapi;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,38 +11,44 @@ import java.util.List;
 @RequestMapping("/api/posts")
 public class BlogController {
 
-    private static List<String> posts = new ArrayList<>();
+    private static List<Post> posts = new ArrayList<>();
+
+    @Value("${blog.validation.title.max-length}")
+    private int titleMaxLength;
+
+    @Value("${blog.validation.content.max-length}")
+    private int contentMaxLength;
 
     @PostMapping
-    public ResponseEntity<String> createPost(@RequestParam String title, @RequestParam String content) {
+    public ResponseEntity<String> createPost(@RequestBody Post post) {
         // Validate inputs
-        if (title == null || title.trim().isEmpty()) {
+        if (post.getTitle() == null || post.getTitle().trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: Title cannot be empty");
         }
-        if (content == null || content.trim().isEmpty()) {
+        if (post.getContent() == null || post.getContent().trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: Content cannot be empty");
         }
-        if (title.length() > 200) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: Title is too long (max 200 characters)");
+        if (post.getTitle().length() > titleMaxLength) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: Title is too long (max " + titleMaxLength + " characters)");
         }
-        if (content.length() > 5000) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: Content is too long (max 5000 characters)");
+        if (post.getContent().length() > contentMaxLength) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: Content is too long (max " + contentMaxLength + " characters)");
         }
-        
-        String post = title + ":" + content;
-        posts.add(post);
+
+        Post newPost = new Post(posts.size(), post.getTitle(), post.getContent());
+        posts.add(newPost);
         return ResponseEntity.status(HttpStatus.CREATED).body("Post created");
     }
 
     @GetMapping
-    public List<String> getAllPosts() {
+    public List<Post> getAllPosts() {
         return posts;
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<String> getPost(@PathVariable int id) {
+    public ResponseEntity<Post> getPost(@PathVariable int id) {
         if (id < 0 || id >= posts.size()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Error: Post not found (invalid id)");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
         return ResponseEntity.status(HttpStatus.OK).body(posts.get(id));
     }
@@ -52,8 +59,8 @@ public class BlogController {
         if (content == null || content.trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: Content cannot be empty");
         }
-        if (content.length() > 5000) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: Content is too long (max 5000 characters)");
+        if (content.length() > contentMaxLength) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: Content is too long (max " + contentMaxLength + " characters)");
         }
         return ResponseEntity.status(HttpStatus.OK).body("OK");
     }
